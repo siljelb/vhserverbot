@@ -16,30 +16,17 @@ let channelId;
 
 client.once('ready', () => {
     logMessageToConsole('Bot is ready');
-});
 
-client.on('guildCreate', (guild) => {
-    logMessageToConsole(`Joined guild: ${guild.name} (ID: ${guild.id})`);
-    logMessageToConsole(`Total channels in the guild: ${guild.channels.cache.size}`);
-
-    if (guild.channels && guild.channels.cache) {
+    // Log channels in all guilds the bot is a member of
+    client.guilds.cache.forEach((guild) => {
+        logMessageToConsole(`Text Channels in ${guild.name} (ID: ${guild.id}):`);
         guild.channels.cache.forEach((channel) => {
-            logMessageToConsole(`- ${channel.name} (ID: ${channel.id}, Type: ${channel.type})`);
+            if (channel.type === 'GUILD_TEXT') {
+                logMessageToConsole(`- ${channel.name} (ID: ${channel.id})`);
+            }
         });
-
-        const textChannel = guild.channels.cache.find((channel) => channel.type === 'GUILD_TEXT');
-        if (textChannel) {
-            channelId = textChannel.id;
-            logMessageToConsole(`Found a text channel: ${textChannel.name} (ID: ${channelId})`);
-        } else {
-            logMessageToConsole('No text channels found in the guild');
-        }
-    } else {
-        logMessageToConsole('Guild channels not available');
-    }
+    });
 });
-
-
 
 const logFilePath = process.env.LOGFILE;
 const messageCooldown = new Set();
@@ -151,6 +138,7 @@ tailProcess.on('close', (code) => {
 
 process.on('exit', () => {
     tailProcess.kill();
+    console.log("Bot stopped");
 });
 
 client.login(process.env.BOT_TOKEN);

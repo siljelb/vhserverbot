@@ -12,14 +12,13 @@ const client = new Client({
     ],
 });
 
-let channelId; // Declare the variable to store the channel ID
+let channelId;
 
 client.once('ready', () => {
     logMessageToConsole('Bot is ready');
 });
 
 client.on('guildCreate', (guild) => {
-    // Log a list of all text channels in the guild
     logMessageToConsole(`Text Channels in ${guild.name}:`);
     guild.channels.cache.forEach((channel) => {
         if (channel.type === 'text') {
@@ -27,7 +26,6 @@ client.on('guildCreate', (guild) => {
         }
     });
 
-    // Use the first text channel ID in the guild
     const textChannel = guild.channels.cache.find((channel) => channel.type === 'text');
     if (textChannel) {
         channelId = textChannel.id;
@@ -51,8 +49,37 @@ const logMessageToConsole = (message) => {
     console.log(`[${timestamp}] ${message}`);
 };
 
+const replaceWithRandomEpithet = (playerName) => {
+    const vikingEpithets = [
+        "the Fearless",
+        "the Valiant",
+        "the Bold",
+        "the Brave",
+        "the Mighty",
+        "the Cunning",
+        "the Conqueror",
+        "the Fearbringer",
+        "the Defender",
+        "the Ironheart",
+        "the Stormrider",
+        "the Dragonheart",
+        "the Fierce",
+        "the Unyielding",
+        "the Battleborn",
+        "the Thunderer",
+        "the Relentless",
+        "the Ragnarök Survivor",
+    ];
+
+    const seed = playerName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const randomIndex = seed % vikingEpithets.length;
+
+    return vikingEpithets[randomIndex];
+};
+
 const getPlayerLoginMessage = (playerName) => {
-    const message = `:sparkles: **${playerName} the Viking has joined the game. Come join them!**`;
+    const vikingEpithet = replaceWithRandomEpithet(playerName);
+    const message = `:sparkles: **${playerName} ${vikingEpithet} has joined the game. Come join them!**`;
     logMessageToConsole(message);
     return message;
 };
@@ -121,4 +148,3 @@ process.on('exit', () => {
 });
 
 client.login(process.env.BOT_TOKEN);
-

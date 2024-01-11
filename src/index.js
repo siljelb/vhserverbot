@@ -20,13 +20,13 @@ client.once('ready', () => {
 
 client.on('guildCreate', (guild) => {
     logMessageToConsole(`Text Channels in ${guild.name}:`);
-    guild.channels.cache.forEach((channel) => {
+    client.guild.channels.cache.forEach((channel) => {
         if (channel.type === 'text') {
             logMessageToConsole(`- ${channel.name} (ID: ${channel.id})`);
         }
     });
 
-    const textChannel = guild.channels.cache.find((channel) => channel.type === 'text');
+    const textChannel = client.guild.channels.cache.find((channel) => channel.type === 'text');
     if (textChannel) {
         channelId = textChannel.id;
         logMessageToConsole(`Channel ID set to: ${channelId}`);

@@ -21,7 +21,7 @@ client.once('ready', () => {
     client.guilds.cache.forEach((guild) => {
         logMessageToConsole(`Channels in ${guild.name} (ID: ${guild.id}):`);
         guild.channels.cache.forEach((channel) => {
-            logMessageToConsole(`- ${channel.name} (ID: ${channel.id})`);
+            logMessageToConsole(`- ${channel.name} Type: ${channel.type} (ID: ${channel.id})`);
         });
     });
 });

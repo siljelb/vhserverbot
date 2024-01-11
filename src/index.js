@@ -12,25 +12,33 @@ const client = new Client({
     ],
 });
 
-const channelId = process.env.CHANNEL_ID;
+let channelId; // Declare the variable to store the channel ID
 
 client.once('ready', () => {
     logMessageToConsole('Bot is ready');
 });
 
+client.on('guildCreate', (guild) => {
+    // Log a list of all text channels in the guild
+    logMessageToConsole(`Text Channels in ${guild.name}:`);
+    guild.channels.cache.forEach((channel) => {
+        if (channel.type === 'text') {
+            logMessageToConsole(`- ${channel.name} (ID: ${channel.id})`);
+        }
+    });
+
+    // Use the first text channel ID in the guild
+    const textChannel = guild.channels.cache.find((channel) => channel.type === 'text');
+    if (textChannel) {
+        channelId = textChannel.id;
+        logMessageToConsole(`Channel ID set to: ${channelId}`);
+    } else {
+        logMessageToConsole('No text channels found in the guild');
+    }
+});
+
 const logFilePath = process.env.LOGFILE;
-
 const messageCooldown = new Set();
-
-// Custom Emojis (replace these IDs with your actual emoji IDs)
-const emojiIDs = {
-    glowingPortal: '826075075056500767',
-    frostTroll: '489509728070795264',
-    greyDwarf: '826058950490980362',
-    // Add more emojis as needed
-};
-
-const getEmoji = (emojiID) => client.emojis.cache.get(emojiID) || `:question:`;
 
 const getCurrentTimestamp = () => {
     const now = new Date();
@@ -44,19 +52,16 @@ const logMessageToConsole = (message) => {
 };
 
 const getPlayerLoginMessage = (playerName) => {
-    const glowingPortal = getEmoji(emojiIDs.glowingPortal);
-    const message = `${glowingPortal} **${playerName} has joined the game. Come join them!**`;
+    const message = `:sparkles: **${playerName} the Viking has joined the game. Come join them!**`;
     logMessageToConsole(message);
     return message;
 };
 
 const getEventMessage = (event) => {
-    const frostTroll = getEmoji(emojiIDs.frostTroll);
-    const greyDwarf = getEmoji(emojiIDs.greyDwarf);
-
     const eventMessages = {
-        'foresttrolls': `${frostTroll} The ground is shaking`,
-        'army_theelder': `${greyDwarf} The forest is moving...`,
+        'foresttrolls': `:shaking_face: The ground is shaking`,
+        'army_theelder': `:evergreen_tree: The forest is moving...`,
+        'army_eikthyr': `:boar: Eikthyr rallies the creatures of the forest`,
         // Add more events and messages as needed
     };
 
@@ -70,24 +75,23 @@ const postMessageWithCooldown = (pattern, key) => {
     if (channel) {
         if (!messageCooldown.has(key)) {
             const message = pattern(key);
-
             channel.send(message);
             messageCooldown.add(key);
 
             setTimeout(() => {
                 messageCooldown.delete(key);
-            }, 10000);
+            }, 60000);
         }
     }
 };
 
 const parseAndPost = (line) => {
-    if (line.includes('Got character ZDOID from')) {
-        const playerNameMatch = line.match(/Got character ZDOID from (.+) :/);
+    if (line.match(/Got character ZDOID from [^\s]+ : [1-9]\d*:[1-9]\d*(?!:0:0)/)) {
+        const playerNameMatch = line.match(/Got character ZDOID from ([^\s]+) : [1-9]\d*:[1-9]\d*(?!:0:0)/);
         const playerName = playerNameMatch ? playerNameMatch[1] : 'Unknown Player';
         postMessageWithCooldown(getPlayerLoginMessage, playerName);
     } else if (line.includes('Random event set:')) {
-        const eventMatch = line.match(/Random event set:(\w+)$/);
+        const eventMatch = line.match(/Random event set:(\w+)/);
         const event = eventMatch ? eventMatch[1] : 'unknown';
         postMessageWithCooldown(getEventMessage, event);
     }

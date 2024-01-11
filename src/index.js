@@ -19,19 +19,18 @@ client.once('ready', () => {
 });
 
 client.on('guildCreate', (guild) => {
-    logMessageToConsole(`Text Channels in ${guild.name}:`);
+    logMessageToConsole(`Joined guild: ${guild.name} (ID: ${guild.id})`);
+    logMessageToConsole(`Total channels in the guild: ${guild.channels.cache.size}`);
 
     if (guild.channels && guild.channels.cache) {
         guild.channels.cache.forEach((channel) => {
-            if (channel.type === 'GUILD_TEXT') {
-                logMessageToConsole(`- ${channel.name} (ID: ${channel.id})`);
-            }
+            logMessageToConsole(`- ${channel.name} (ID: ${channel.id}, Type: ${channel.type})`);
         });
 
         const textChannel = guild.channels.cache.find((channel) => channel.type === 'GUILD_TEXT');
         if (textChannel) {
             channelId = textChannel.id;
-            logMessageToConsole(`Channel ID set to: ${channelId}`);
+            logMessageToConsole(`Found a text channel: ${textChannel.name} (ID: ${channelId})`);
         } else {
             logMessageToConsole('No text channels found in the guild');
         }
@@ -39,6 +38,7 @@ client.on('guildCreate', (guild) => {
         logMessageToConsole('Guild channels not available');
     }
 });
+
 
 
 const logFilePath = process.env.LOGFILE;

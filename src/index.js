@@ -12,18 +12,10 @@ const client = new Client({
     ],
 });
 
-let channelId;
+const channelId = "1194941834447835146";
 
 client.once('ready', () => {
     logMessageToConsole('Bot is ready');
-
-    // Log channels in all guilds the bot is a member of
-    client.guilds.cache.forEach((guild) => {
-        logMessageToConsole(`Channels in ${guild.name} (ID: ${guild.id}):`);
-        guild.channels.cache.forEach((channel) => {
-            logMessageToConsole(`- ${channel.name} Type: ${channel.type} (ID: ${channel.id})`);
-        });
-    });
 });
 
 const logFilePath = process.env.LOGFILE;

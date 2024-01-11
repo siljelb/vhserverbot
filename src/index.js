@@ -19,11 +19,9 @@ client.once('ready', () => {
 
     // Log channels in all guilds the bot is a member of
     client.guilds.cache.forEach((guild) => {
-        logMessageToConsole(`Text Channels in ${guild.name} (ID: ${guild.id}):`);
+        logMessageToConsole(`Channels in ${guild.name} (ID: ${guild.id}):`);
         guild.channels.cache.forEach((channel) => {
-            if (channel.type === 'GUILD_TEXT') {
-                logMessageToConsole(`- ${channel.name} (ID: ${channel.id})`);
-            }
+            logMessageToConsole(`- ${channel.name} (ID: ${channel.id})`);
         });
     });
 });

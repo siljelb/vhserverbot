@@ -96,8 +96,8 @@ const postMessageWithCooldown = (pattern, key) => {
 };
 
 const parseAndPost = (line) => {
-    if (line.match(/Got character ZDOID from [^\s]+ : [1-9]\d*:[1-9]\d*(?!:0:0)/)) {
-        const playerNameMatch = line.match(/Got character ZDOID from ([^\s]+) : [1-9]\d*:[1-9]\d*(?!:0:0)/);
+    if (line.match(/Got character ZDOID from [^\s]+ : (?![+-]?0$)[+-]?\d+:[1-9]\d*/)) {
+        const playerNameMatch = line.match(/Got character ZDOID from ([^\s]+) : (?![+-]?0$)[+-]?\d+:[1-9]\d*/);
         const playerName = playerNameMatch ? playerNameMatch[1] : 'Unknown Player';
         postMessageWithCooldown(getPlayerLoginMessage, playerName);
     } else if (line.includes('Random event set:')) {

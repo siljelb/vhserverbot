@@ -51,28 +51,32 @@ const savePlayerData = (playerData) => {
 // Load existing player data
 let playerData = loadPlayerData();
 
-const replaceWithRandomEpithet = (playerName) => {
-    const vikingEpithets = [
-        "the Fearless",
-        "the Valiant",
-        "the Bold",
-        "the Brave",
-        "the Mighty",
-        "the Cunning",
-        "the Conqueror",
-        "the Fearbringer",
-        "the Defender",
-        "the Ironheart",
-        "the Stormrider",
-        "the Dragonheart",
-        "the Fierce",
-        "the Unyielding",
-        "the Battleborn",
-        "the Thunderer",
-        "the Relentless",
-        "the Ragnarök Survivor",
-    ];
+// Function to load epithets from file
+const loadEpithets = () => {
+    try {
+        const data = fs.readFileSync('epithets.json', 'utf8');
+        return JSON.parse(data);
+    } catch (error) {
+        return [];
+    }
+};
 
+const loadEventMessages = () => {
+    try {
+        const data = fs.readFileSync('eventMessages.json', 'utf8');
+        return JSON.parse(data);
+    } catch (error) {
+        return [];
+    }
+};
+
+// Load epithets
+const vikingEpithets = loadEpithets();
+
+// Load epithets
+const eventMessages = loadEventMessages();
+
+const replaceWithRandomEpithet = (playerName) => {
     const seed = playerName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     const randomIndex = seed % vikingEpithets.length;
 
@@ -98,13 +102,6 @@ const getPlayerLoginMessage = (playerName) => {
 };
 
 const getEventMessage = (event) => {
-    const eventMessages = {
-        'foresttrolls': `:shaking_face: The ground is shaking`,
-        'army_theelder': `:evergreen_tree: The forest is moving...`,
-        'army_eikthyr': `:boar: Eikthyr rallies the creatures of the forest`,
-        // Add more events and messages as needed
-    };
-
     const message = eventMessages[event] || `Unknown event: ${event}`;
     logMessageToConsole(message);
     return message;

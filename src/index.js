@@ -1,5 +1,6 @@
 const { Client, GatewayIntentBits } = require('discord.js');
 const { spawn } = require('child_process');
+const fs = require('fs');
 const dotenv = require('dotenv');
 
 dotenv.config();
@@ -32,6 +33,24 @@ const logMessageToConsole = (message) => {
     console.log(`[${timestamp}] ${message}`);
 };
 
+// Function to load existing player data from file
+const loadPlayerData = () => {
+    try {
+        const data = fs.readFileSync('playerData.json', 'utf8');
+        return JSON.parse(data);
+    } catch (error) {
+        return {};
+    }
+};
+
+// Function to save player data to file
+const savePlayerData = (playerData) => {
+    fs.writeFileSync('playerData.json', JSON.stringify(playerData, null, 2), 'utf8');
+};
+
+// Load existing player data
+let playerData = loadPlayerData();
+
 const replaceWithRandomEpithet = (playerName) => {
     const vikingEpithets = [
         "the Fearless",
@@ -61,10 +80,21 @@ const replaceWithRandomEpithet = (playerName) => {
 };
 
 const getPlayerLoginMessage = (playerName) => {
-    const vikingEpithet = replaceWithRandomEpithet(playerName);
-    const message = `:sparkles: **${playerName} ${vikingEpithet} has joined the game. Come join them!**`;
-    logMessageToConsole(message);
-    return message;
+    // Check if the player has an assigned epithet
+    if (playerData[playerName]) {
+        const vikingEpithet = playerData[playerName];
+        const message = `:sparkles: **${playerName} ${vikingEpithet} has joined the game. Come join them!**`;
+        logMessageToConsole(message);
+        return message;
+    } else {
+        // If not assigned, generate a new epithet and save it
+        const vikingEpithet = replaceWithRandomEpithet(playerName);
+        playerData[playerName] = vikingEpithet;
+        savePlayerData(playerData);
+        const message = `:sparkles: **${playerName} ${vikingEpithet} has joined the game. Come join them!**`;
+        logMessageToConsole(message);
+        return message;
+    }
 };
 
 const getEventMessage = (event) => {

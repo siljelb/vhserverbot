@@ -25,14 +25,18 @@ const messageCooldown = new Set();
 // Function to get the current timestamp in UTC
 const getCurrentTimestamp = () => {
     const now = new Date();
-    const timestamp = `${now.toISOString().slice(0, 19).replace('T', ' ')} UTC`;
-    return timestamp;
+    return now.toISOString();
 };
 
 // Function to log messages to the console with timestamps
-const logMessageToConsole = (message) => {
+const logMessageToConsole = (message, isError = false) => {
     const timestamp = getCurrentTimestamp();
-    console.log(`[${timestamp}] ${message}`);
+    const logMessage = `[${timestamp}] ${message}`;
+    if (isError) {
+        console.error(logMessage);
+    } else {
+        console.log(logMessage);
+    }
 };
 
 // Function to get the channel ID based on the guild ID
@@ -62,10 +66,10 @@ client.once('ready', () => {
 const loadFile = (fileName, fileType) => {
     try {
         const data = fs.readFileSync(fileName, 'utf8');
-        console.log(`Successfully loaded ${fileType} from ${fileName}`);
+        logMessageToConsole(`Successfully loaded ${fileType} from ${fileName}: ${JSON.stringify(data)}`);
         return JSON.parse(data);
     } catch (error) {
-        console.error(`Failed to load ${fileType} from ${fileName}: ${error.message}`);
+        logMessageToConsole(`Failed to load ${fileType} from ${fileName}: ${error.message}`, true);
         return null;
     }
 };
@@ -149,18 +153,18 @@ tailProcess.stdout.on('data', (data) => {
 
 // Event listener for errors from the tail process
 tailProcess.stderr.on('data', (data) => {
-    console.error(`tail process error: ${data}`);
+    logMessageToConsole(`tail process error: ${data}`, true);
 });
 
 // Event listener for the tail process closing
 tailProcess.on('close', (code) => {
-    console.log(`tail process exited with code ${code}`);
+    logMessageToConsole(`tail process exited with code ${code}`);
 });
 
 // Event listener for the script exiting
 process.on('exit', () => {
     tailProcess.kill();
-    console.log("Bot stopped");
+    logMessageToConsole("Bot stopped");
 });
 
 // Log in to Discord with the bot token

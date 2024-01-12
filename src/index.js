@@ -47,15 +47,15 @@ client.once('ready', () => {
 
     // Load existing player data
     playerData = loadFile('playerData.json', 'player data');
-    if (!playerData) playerData = {};
+    if (playerData) console.log(`Player Data loaded: ${JSON.stringify(playerData)}`);
 
     // Load epithets
     vikingEpithets = loadFile('epithets.json', 'viking epithets');
-    if (!vikingEpithets) vikingEpithets = [];
+    if (vikingEpithets) console.log(`Viking Epithets loaded: ${JSON.stringify(vikingEpithets)}`);
 
     // Load event messages
     eventMessages = loadFile('eventMessages.json', 'event messages');
-    if (!eventMessages) eventMessages = [];
+    if (eventMessages) console.log(`Event Messages loaded: ${JSON.stringify(eventMessages)}`);
 });
 
 // Function to load files with console messages

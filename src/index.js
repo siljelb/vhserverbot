@@ -25,7 +25,8 @@ const messageCooldown = new Set();
 // Function to get the current timestamp in UTC
 const getCurrentTimestamp = () => {
     const now = new Date();
-    return now.toISOString();
+    const timestamp = `${now.toISOString().slice(0, 19).replace('T', ' ')} UTC`;
+    return timestamp;
 };
 
 // Function to log messages to the console with timestamps

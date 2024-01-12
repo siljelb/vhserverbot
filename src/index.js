@@ -16,14 +16,6 @@ const client = new Client({
     ],
 });
 
-// Define the Discord channel ID where messages will be sent
-const channelId = "1194941834447835146";
-
-// Event handler for when the bot is ready
-client.once('ready', () => {
-    logMessageToConsole('Bot is ready');
-});
-
 // Define the path to the log file
 const logFilePath = process.env.LOGFILE;
 
@@ -43,49 +35,40 @@ const logMessageToConsole = (message) => {
     console.log(`[${timestamp}] ${message}`);
 };
 
-// Function to load existing player data from a file
-const loadPlayerData = () => {
+// Function to get the channel ID based on the guild ID
+const getChannelId = (guildId) => {
+    const envVariableName = `GUILD_${guildId}_CHANNEL_ID`;
+    return process.env[envVariableName] || null;
+};
+
+// Event handler for when the bot is ready
+client.once('ready', () => {
+    logMessageToConsole('Bot is ready');
+
+    // Load existing player data
+    playerData = loadFile('playerData.json', 'player data');
+    if (!playerData) playerData = {};
+
+    // Load epithets
+    vikingEpithets = loadFile('epithets.json', 'viking epithets');
+    if (!vikingEpithets) vikingEpithets = [];
+
+    // Load event messages
+    eventMessages = loadFile('eventMessages.json', 'event messages');
+    if (!eventMessages) eventMessages = [];
+});
+
+// Function to load files with console messages
+const loadFile = (fileName, fileType) => {
     try {
-        const data = fs.readFileSync('playerData.json', 'utf8');
+        const data = fs.readFileSync(fileName, 'utf8');
+        console.log(`Successfully loaded ${fileType} from ${fileName}`);
         return JSON.parse(data);
     } catch (error) {
-        return {};
+        console.error(`Failed to load ${fileType} from ${fileName}: ${error.message}`);
+        return null;
     }
 };
-
-// Function to save player data to a file
-const savePlayerData = (playerData) => {
-    fs.writeFileSync('playerData.json', JSON.stringify(playerData, null, 2), 'utf8');
-};
-
-// Load existing player data
-let playerData = loadPlayerData();
-
-// Function to load epithets from a file
-const loadEpithets = () => {
-    try {
-        const data = fs.readFileSync('epithets.json', 'utf8');
-        return JSON.parse(data);
-    } catch (error) {
-        return [];
-    }
-};
-
-// Function to load event messages from a file
-const loadEventMessages = () => {
-    try {
-        const data = fs.readFileSync('eventMessages.json', 'utf8');
-        return JSON.parse(data);
-    } catch (error) {
-        return [];
-    }
-};
-
-// Load epithets
-const vikingEpithets = loadEpithets();
-
-// Load event messages
-const eventMessages = loadEventMessages();
 
 // Function to replace a player's name with a random epithet
 const replaceWithRandomEpithet = (playerName) => {
@@ -122,7 +105,8 @@ const getEventMessage = (event) => {
 };
 
 // Function to post a message to the Discord channel with a cooldown
-const postMessageWithCooldown = (pattern, key) => {
+const postMessageWithCooldown = (pattern, key, guildId) => {
+    const channelId = getChannelId(guildId);
     const channel = client.channels.cache.get(channelId);
     if (channel) {
         if (!messageCooldown.has(key)) {

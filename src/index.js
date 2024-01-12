@@ -43,31 +43,37 @@ const logMessageToConsole = (message, isError = false) => {
 // Function to get the channel ID based on the guild ID
 const getChannelId = (guildId) => {
     const envVariableName = `GUILD_${guildId}_CHANNEL_ID`;
-    return process.env[envVariableName] || null;
+    if (envVariableName) {
+        const channelID = process.env[envVariableName];
+        logMessageToConsole(`Got channelID: ${channelID}`);
+        return channelID;
+    } else {
+        return null;
+    }
 };
 
 // Event handler for when the bot is ready
 client.once('ready', () => {
-    logMessageToConsole('Bot is ready');
+    logMessageToConsole('Bot started');
 
-    // Load existing player data
-    playerData = loadFile('playerData.json', 'player data');
-    if (playerData) console.log(`Player Data loaded: ${JSON.stringify(playerData)}`);
+    // Log guilds and channels
+    logMessageToConsole('Guilds joined:');
+    client.guilds.cache.forEach((guild) => {
+        logMessageToConsole(`  ${guild.name} (ID: ${guild.id})`);
 
-    // Load epithets
-    vikingEpithets = loadFile('epithets.json', 'viking epithets');
-    if (vikingEpithets) console.log(`Viking Epithets loaded: ${JSON.stringify(vikingEpithets)}`);
-
-    // Load event messages
-    eventMessages = loadFile('eventMessages.json', 'event messages');
-    if (eventMessages) console.log(`Event Messages loaded: ${JSON.stringify(eventMessages)}`);
+        // Log channels in each guild
+        logMessageToConsole(`    Channels:`);
+        guild.channels.cache.forEach((channel) => {
+            logMessageToConsole(`      ${channel.name} (ID: ${channel.id}, Type: ${channel.type})`);
+        });
+    });
 });
 
 // Function to load files with console messages
 const loadFile = (fileName, fileType) => {
     try {
         const data = fs.readFileSync(fileName, 'utf8');
-        logMessageToConsole(`Successfully loaded ${fileType} from ${fileName}: ${JSON.stringify(data)}`);
+        logMessageToConsole(`Successfully loaded ${fileType} from ${fileName}`);
         return JSON.parse(data);
     } catch (error) {
         logMessageToConsole(`Failed to load ${fileType} from ${fileName}: ${error.message}`, true);
@@ -75,11 +81,64 @@ const loadFile = (fileName, fileType) => {
     }
 };
 
-// Function to replace a player's name with a random epithet
-const replaceWithRandomEpithet = (playerName) => {
-    const seed = playerName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const randomIndex = seed % vikingEpithets.length;
+// Function to load existing player data from file
+const loadPlayerData = () => {
+    const data = loadFile('playerData.json', 'player data');
+    if (data) {
+        logMessageToConsole(`Player Data loaded:\n${JSON.stringify(data, null, 2)}`);
+        return data;
+    } else {
+        logMessageToConsole(`Player Data not found or empty`, true);
+        return [];
+    }
+};
 
+// Function to save player data to file
+const saveFile = (data, fileName) => {
+    try {
+        fs.writeFileSync(fileName, JSON.stringify(data, null, 2), 'utf8');
+    } catch (error) {
+        logMessageToConsole(`Failed to save ${fileName} : ${error.message}`, true);
+        return null;
+    }
+};
+
+// Function to load epithets from file
+const loadEpithets = () => {
+    const data = loadFile('epithets.json', 'viking epithets');
+    if (data) {
+        logMessageToConsole(`Viking Epithets loaded:\n${JSON.stringify(data, null, 2)}`);
+        return data;
+    } else {
+        logMessageToConsole(`Viking Epithets not found or empty`, true);
+        return [];
+    }
+};
+
+// Function to load event messages from file
+const loadEventMessages = () => {
+    const data = loadFile('eventMessages.json', 'event messages');
+    if (data) {
+        logMessageToConsole(`Event Messages loaded:\n${JSON.stringify(data, null, 2)}`);
+        return data;
+    } else {
+        logMessageToConsole(`Event Messages not found or empty`, true);
+        return [];
+    }
+};
+
+// Load existing player data
+let playerData = loadPlayerData();
+
+// Load epithets
+const vikingEpithets = loadEpithets();
+
+// Load epithets
+const eventMessages = loadEventMessages();
+
+// Function to replace a player's name with a random epithet
+const replaceWithRandomEpithet = () => {
+    const randomIndex = Math.floor(Math.random() * vikingEpithets.length);
     return vikingEpithets[randomIndex];
 };
 
@@ -93,9 +152,9 @@ const getPlayerLoginMessage = (playerName) => {
         return message;
     } else {
         // If not assigned, generate a new epithet and save it
-        const vikingEpithet = replaceWithRandomEpithet(playerName);
+        const vikingEpithet = replaceWithRandomEpithet();
         playerData[playerName] = vikingEpithet;
-        savePlayerData(playerData);
+        saveFile(playerData,'playerData.json');
         const message = `:sparkles: **${playerName} ${vikingEpithet} has joined the game. Come join them!**`;
         logMessageToConsole(message);
         return message;
@@ -110,18 +169,24 @@ const getEventMessage = (event) => {
 };
 
 // Function to post a message to the Discord channel with a cooldown
-const postMessageWithCooldown = (pattern, key, guildId) => {
-    const channelId = getChannelId(guildId);
+const postMessageWithCooldown = async (message, key, guild) => {
+    logMessageToConsole(`Posting message with cooldown. Message: ${message} - Key: ${key} - guild: ${guild.name}`);
+    const channelId = getChannelId(guild.id);
     const channel = client.channels.cache.get(channelId);
+    logMessageToConsole(channel);
+
     if (channel) {
         if (!messageCooldown.has(key)) {
-            const message = pattern(key);
-            channel.send(message);
-            messageCooldown.add(key);
+            try {
+                await channel.send(message);
+                messageCooldown.add(key);
 
-            setTimeout(() => {
-                messageCooldown.delete(key);
-            }, 60000);
+                setTimeout(() => {
+                    messageCooldown.delete(key);
+                }, 60000);
+            } catch (error) {
+                logMessageToConsole(`Error sending message: ${error.message}`, true);
+            }
         }
     }
 };
@@ -131,12 +196,20 @@ const parseAndPost = (line) => {
     if (line.match(/Got character ZDOID from [^\s]+ : (?![+-]?0$)[+-]?\d+:[1-9]\d*/)) {
         const playerNameMatch = line.match(/Got character ZDOID from ([^\s]+) : (?![+-]?0$)[+-]?\d+:[1-9]\d*/);
         const playerName = playerNameMatch ? playerNameMatch[1] : 'Unknown Player';
-        postMessageWithCooldown(getPlayerLoginMessage, playerName);
+        logMessageToConsole(`Read from log: ${line} - Matched player login pattern`);
+        const playerLoginMessage = getPlayerLoginMessage(playerName);
+        client.guilds.cache.forEach((guild) => {
+            postMessageWithCooldown(playerLoginMessage, playerName, guild);
+        });
     } else if (line.includes('Random event set:')) {
         const eventMatch = line.match(/Random event set:(\w+)/);
         const event = eventMatch ? eventMatch[1] : 'unknown';
-        postMessageWithCooldown(getEventMessage, event);
-    }
+        logMessageToConsole(`Read from log: ${line} - Matched random event pattern`);
+        const eventMessage = getEventMessage(event);
+        client.guilds.cache.forEach((guild) => {
+            postMessageWithCooldown(eventMessage, event, guild);
+        });
+    } 
 };
 
 // Set up a child process to tail the log file
@@ -165,7 +238,7 @@ tailProcess.on('close', (code) => {
 // Event listener for the script exiting
 process.on('exit', () => {
     tailProcess.kill();
-    logMessageToConsole("Bot stopped");
+    logMessageToConsole('Bot stopped');
 });
 
 // Log in to Discord with the bot token

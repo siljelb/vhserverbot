@@ -1,10 +1,13 @@
+// Import necessary modules
 const { Client, GatewayIntentBits } = require('discord.js');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const dotenv = require('dotenv');
 
+// Load environment variables from .env file
 dotenv.config();
 
+// Create a new Discord client
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -13,27 +16,34 @@ const client = new Client({
     ],
 });
 
+// Define the Discord channel ID where messages will be sent
 const channelId = "1194941834447835146";
 
+// Event handler for when the bot is ready
 client.once('ready', () => {
     logMessageToConsole('Bot is ready');
 });
 
+// Define the path to the log file
 const logFilePath = process.env.LOGFILE;
+
+// Set up a cooldown for messages
 const messageCooldown = new Set();
 
+// Function to get the current timestamp in UTC
 const getCurrentTimestamp = () => {
     const now = new Date();
     const timestamp = `${now.toISOString().slice(0, 19).replace('T', ' ')} UTC`;
     return timestamp;
 };
 
+// Function to log messages to the console with timestamps
 const logMessageToConsole = (message) => {
     const timestamp = getCurrentTimestamp();
     console.log(`[${timestamp}] ${message}`);
 };
 
-// Function to load existing player data from file
+// Function to load existing player data from a file
 const loadPlayerData = () => {
     try {
         const data = fs.readFileSync('playerData.json', 'utf8');
@@ -43,7 +53,7 @@ const loadPlayerData = () => {
     }
 };
 
-// Function to save player data to file
+// Function to save player data to a file
 const savePlayerData = (playerData) => {
     fs.writeFileSync('playerData.json', JSON.stringify(playerData, null, 2), 'utf8');
 };
@@ -51,7 +61,7 @@ const savePlayerData = (playerData) => {
 // Load existing player data
 let playerData = loadPlayerData();
 
-// Function to load epithets from file
+// Function to load epithets from a file
 const loadEpithets = () => {
     try {
         const data = fs.readFileSync('epithets.json', 'utf8');
@@ -61,6 +71,7 @@ const loadEpithets = () => {
     }
 };
 
+// Function to load event messages from a file
 const loadEventMessages = () => {
     try {
         const data = fs.readFileSync('eventMessages.json', 'utf8');
@@ -73,9 +84,10 @@ const loadEventMessages = () => {
 // Load epithets
 const vikingEpithets = loadEpithets();
 
-// Load epithets
+// Load event messages
 const eventMessages = loadEventMessages();
 
+// Function to replace a player's name with a random epithet
 const replaceWithRandomEpithet = (playerName) => {
     const seed = playerName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     const randomIndex = seed % vikingEpithets.length;
@@ -83,6 +95,7 @@ const replaceWithRandomEpithet = (playerName) => {
     return vikingEpithets[randomIndex];
 };
 
+// Function to generate a login message for a player
 const getPlayerLoginMessage = (playerName) => {
     // Check if the player has an assigned epithet
     if (playerData[playerName]) {
@@ -101,12 +114,14 @@ const getPlayerLoginMessage = (playerName) => {
     }
 };
 
+// Function to get an event message based on the event type
 const getEventMessage = (event) => {
     const message = eventMessages[event] || `Unknown event: ${event}`;
     logMessageToConsole(message);
     return message;
 };
 
+// Function to post a message to the Discord channel with a cooldown
 const postMessageWithCooldown = (pattern, key) => {
     const channel = client.channels.cache.get(channelId);
     if (channel) {
@@ -122,6 +137,7 @@ const postMessageWithCooldown = (pattern, key) => {
     }
 };
 
+// Function to parse and post messages from the log file
 const parseAndPost = (line) => {
     if (line.match(/Got character ZDOID from [^\s]+ : (?![+-]?0$)[+-]?\d+:[1-9]\d*/)) {
         const playerNameMatch = line.match(/Got character ZDOID from ([^\s]+) : (?![+-]?0$)[+-]?\d+:[1-9]\d*/);
@@ -134,8 +150,10 @@ const parseAndPost = (line) => {
     }
 };
 
+// Set up a child process to tail the log file
 const tailProcess = spawn('tail', ['-n', '0', '-F', logFilePath]);
 
+// Event listener for data from the tail process
 tailProcess.stdout.on('data', (data) => {
     const lines = data.toString().split('\n');
     lines.forEach((line) => {
@@ -145,17 +163,21 @@ tailProcess.stdout.on('data', (data) => {
     });
 });
 
+// Event listener for errors from the tail process
 tailProcess.stderr.on('data', (data) => {
     console.error(`tail process error: ${data}`);
 });
 
+// Event listener for the tail process closing
 tailProcess.on('close', (code) => {
     console.log(`tail process exited with code ${code}`);
 });
 
+// Event listener for the script exiting
 process.on('exit', () => {
     tailProcess.kill();
     console.log("Bot stopped");
 });
 
+// Log in to Discord with the bot token
 client.login(process.env.BOT_TOKEN);

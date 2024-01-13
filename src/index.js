@@ -45,7 +45,6 @@ const getChannelId = (guildId) => {
     const envVariableName = `GUILD_${guildId}_CHANNEL_ID`;
     if (envVariableName) {
         const channelID = process.env[envVariableName];
-        logMessageToConsole(`Got channelID: ${channelID}`);
         return channelID;
     } else {
         return null;
@@ -59,13 +58,10 @@ client.once('ready', () => {
     // Log guilds and channels
     logMessageToConsole('Guilds joined:');
     client.guilds.cache.forEach((guild) => {
-        logMessageToConsole(`  ${guild.name} (ID: ${guild.id})`);
-
-        // Log channels in each guild
-        logMessageToConsole(`    Channels:`);
-        guild.channels.cache.forEach((channel) => {
-            logMessageToConsole(`      ${channel.name} (ID: ${channel.id}, Type: ${channel.type})`);
-        });
+        const channelId = getChannelId(guild.id);
+        const channel = client.channels.cache.get(channelId);
+        // Log the posting channel for this guild
+        logMessageToConsole(`For the ${guild.name} guild I will post in the #${channel.name} channel.`);
     });
 });
 
@@ -155,7 +151,7 @@ const getPlayerLoginMessage = (playerName) => {
         const vikingEpithet = replaceWithRandomEpithet();
         playerData[playerName] = vikingEpithet;
         saveFile(playerData,'playerData.json');
-        const message = `:sparkles: **${playerName} ${vikingEpithet} has joined the game. Come join them!**`;
+        const message = `:sparkles: **${playerName} ${vikingEpithet} has entered Valheim. Come join them!**`;
         logMessageToConsole(message);
         return message;
     }
@@ -170,11 +166,8 @@ const getEventMessage = (event) => {
 
 // Function to post a message to the Discord channel with a cooldown
 const postMessageWithCooldown = async (message, key, guild) => {
-    logMessageToConsole(`Posting message with cooldown. Message: ${message} - Key: ${key} - guild: ${guild.name}`);
     const channelId = getChannelId(guild.id);
     const channel = client.channels.cache.get(channelId);
-    logMessageToConsole(channel);
-
     if (channel) {
         if (!messageCooldown.has(key)) {
             try {

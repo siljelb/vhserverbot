@@ -133,8 +133,9 @@ const vikingEpithets = loadEpithets();
 const eventMessages = loadEventMessages();
 
 // Function to replace a player's name with a random epithet
-const replaceWithRandomEpithet = () => {
-    const randomIndex = Math.floor(Math.random() * vikingEpithets.length);
+const replaceWithRandomEpithet = (playerName) => {
+    const seed = playerName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const randomIndex = seed % vikingEpithets.length;
     return vikingEpithets[randomIndex];
 };
 
@@ -148,7 +149,7 @@ const getPlayerLoginMessage = (playerName) => {
         return message;
     } else {
         // If not assigned, generate a new epithet and save it
-        const vikingEpithet = replaceWithRandomEpithet();
+        const vikingEpithet = replaceWithRandomEpithet(playerName);
         playerData[playerName] = vikingEpithet;
         saveFile(playerData,'playerData.json');
         const message = `:sparkles: **${playerName} ${vikingEpithet} has entered Valheim. Come join them!**`;

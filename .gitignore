@@ -2,3 +2,4 @@
 .env
 node_modules/
 discord_invite.url
+playerData.json

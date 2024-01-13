@@ -144,12 +144,14 @@ const getPlayerLoginMessage = (playerName) => {
     // Check if the player has an assigned epithet
     if (playerData[playerName]) {
         const vikingEpithet = playerData[playerName];
+        logMessageToConsole(`Player name \"${playerName}\" found on file, assigned epithet \"${vikingEpithet}\"`);
         const message = `:sparkles: **${playerName} ${vikingEpithet} has joined the game. Come join them!**`;
         logMessageToConsole(message);
         return message;
     } else {
         // If not assigned, generate a new epithet and save it
         const vikingEpithet = replaceWithRandomEpithet(playerName);
+        logMessageToConsole(`Player name \"${playerName}\" not found on file, assigning epithet \"${vikingEpithet}\"`);
         playerData[playerName] = vikingEpithet;
         saveFile(playerData,'playerData.json');
         const message = `:sparkles: **${playerName} ${vikingEpithet} has entered Valheim. Come join them!**`;

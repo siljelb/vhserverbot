@@ -120,6 +120,42 @@ const loadEventMessages = () => {
     }
 };
 
+// Function to load join messages from file
+const loadJoinMessages = () => {
+    const data = loadFile('joinMessages.json', 'join messages');
+    if (data) {
+        logMessageToConsole(`Join Messages loaded:\n${JSON.stringify(data, null, 2)}`);
+        return data;
+    } else {
+        logMessageToConsole(`Join Messages not found or empty`, true);
+        return [];
+    }
+};
+
+// Function to load resurrect messages from file
+const loadResurrectMessages = () => {
+    const data = loadFile('resurrectMessages.json', 'resurrect messages');
+    if (data) {
+        logMessageToConsole(`Resurrect Messages loaded:\n${JSON.stringify(data, null, 2)}`);
+        return data;
+    } else {
+        logMessageToConsole(`Resurrect Messages not found or empty`, true);
+        return [];
+    }
+};
+
+// Function to load death messages from file
+const loadDeathMessages = () => {
+    const data = loadFile('deathMessages.json', 'resurrect messages');
+    if (data) {
+        logMessageToConsole(`Death Messages loaded:\n${JSON.stringify(data, null, 2)}`);
+        return data;
+    } else {
+        logMessageToConsole(`Death Messages not found or empty`, true);
+        return [];
+    }
+};
+
 // Load existing player data
 let playerData = loadPlayerData();
 
@@ -131,6 +167,15 @@ const vikingEpithets = loadEpithets();
 
 // Load epithets
 const eventMessages = loadEventMessages();
+
+// Load join messages
+const joinMessages = loadJoinMessages();
+
+// Load resurrect messages
+const resurrectMessages = loadResurrectMessages();
+
+// Load death messages
+const deathMessages = loadDeathMessages();
 
 // Function to replace a player's name with a random epithet
 const replaceWithRandomEpithet = (playerName) => {
@@ -154,26 +199,34 @@ const getPlayerEpithet = (playerName) => {
     }
 };
 
-// Function to generate a login message for a player
+// Function to return a random message based on a given array of messages, the player name and the player epithet
+const getRandomMessage = (messageArray, playerName, vikingEpithet) => {
+    const randomMessage = messageArray[Math.floor(Math.random() * messageArray.length)];
+    return randomMessage.replace('{player}', playerName).replace('{vikingEpithet}', vikingEpithet);
+};
+
 const getPlayerLoginMessage = (playerName) => {
     const vikingEpithet = getPlayerEpithet(playerName);
     let message = "";
+
     if (playerJoinType == "join") {
-        message = `:sparkles: **${playerName} ${vikingEpithet} has entered Valheim. Come join them!**`;
+        message = `**${getRandomMessage(joinMessages, playerName, vikingEpithet)} has entered Valheim. Come join them!**`;
     } else if (playerJoinType == "resurrect") {
-        message = `:1195759083622506587: **${playerName} has risen to fight another day! **`;
+        message = `**${getRandomMessage(resurrectMessages, playerName, vikingEpithet)}**`;
     }
+
     logMessageToConsole(message);
     return message;
 };
 
-// Function to generate a death message for a player
 const getPlayerDeathMessage = (playerName) => {
     const vikingEpithet = getPlayerEpithet(playerName);
-    const message = `:skull_crossbones: **${playerName} ${vikingEpithet} has been slain. All hail the fallen warrior!**`;
+    const message = `:skull_crossbones: **${getRandomMessage(deathMessages, playerName, vikingEpithet)} has been slain. All hail the fallen warrior!**`;
+
     logMessageToConsole(message);
     return message;
 };
+
 
 // Function to get an event message based on the event type
 const getEventMessage = (event) => {

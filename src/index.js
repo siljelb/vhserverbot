@@ -19,9 +19,6 @@ const client = new Client({
 // Define the path to the log file
 const logFilePath = process.env.LOGFILE;
 
-// Set up a cooldown for messages
-const messageCooldown = new Set();
-
 // Function to get the current timestamp in UTC
 const getCurrentTimestamp = () => {
     const now = new Date();
@@ -126,6 +123,9 @@ const loadEventMessages = () => {
 // Load existing player data
 let playerData = loadPlayerData();
 
+// Define a variable to hold the reason why a player is joining the game
+let playerJoinType = "join";
+
 // Load epithets
 const vikingEpithets = loadEpithets();
 
@@ -139,25 +139,40 @@ const replaceWithRandomEpithet = (playerName) => {
     return vikingEpithets[randomIndex];
 };
 
-// Function to generate a login message for a player
-const getPlayerLoginMessage = (playerName) => {
-    // Check if the player has an assigned epithet
-    if (playerData[playerName]) {
+// Function to return an epithet for a player name
+const getPlayerEpithet = (playerName) => {
+    if (playerData[playerName]) { // Check if the player has an assigned epithet
         const vikingEpithet = playerData[playerName];
         logMessageToConsole(`Player name \"${playerName}\" found on file, assigned epithet \"${vikingEpithet}\"`);
-        const message = `:sparkles: **${playerName} ${vikingEpithet} has joined the game. Come join them!**`;
-        logMessageToConsole(message);
-        return message;
-    } else {
-        // If not assigned, generate a new epithet and save it
+        return vikingEpithet;
+    } else { // If not assigned, generate a new epithet and save it
         const vikingEpithet = replaceWithRandomEpithet(playerName);
         logMessageToConsole(`Player name \"${playerName}\" not found on file, assigning epithet \"${vikingEpithet}\"`);
         playerData[playerName] = vikingEpithet;
         saveFile(playerData,'playerData.json');
-        const message = `:sparkles: **${playerName} ${vikingEpithet} has entered Valheim. Come join them!**`;
-        logMessageToConsole(message);
-        return message;
+        return vikingEpithet;
     }
+};
+
+// Function to generate a login message for a player
+const getPlayerLoginMessage = (playerName) => {
+    const vikingEpithet = getPlayerEpithet(playerName);
+    let message = "";
+    if (playerJoinType == "join") {
+        message = `:sparkles: **${playerName} ${vikingEpithet} has entered Valheim. Come join them!**`;
+    } else if (playerJoinType == "resurrect") {
+        message = `:1195759083622506587: **${playerName} has risen to fight another day! **`;
+    }
+    logMessageToConsole(message);
+    return message;
+};
+
+// Function to generate a death message for a player
+const getPlayerDeathMessage = (playerName) => {
+    const vikingEpithet = getPlayerEpithet(playerName);
+    const message = `:skull_crossbones: **${playerName} ${vikingEpithet} has been slain. All hail the fallen warrior!**`;
+    logMessageToConsole(message);
+    return message;
 };
 
 // Function to get an event message based on the event type
@@ -167,45 +182,51 @@ const getEventMessage = (event) => {
     return message;
 };
 
-// Function to post a message to the Discord channel with a cooldown
-const postMessageWithCooldown = async (message, key, guild) => {
+// Function to post a message to the Discord channel
+const postMessage = (message, guild) => {
     const channelId = getChannelId(guild.id);
     const channel = client.channels.cache.get(channelId);
     if (channel) {
-        if (!messageCooldown.has(key)) {
-            try {
-                await channel.send(message);
-                messageCooldown.add(key);
-
-                setTimeout(() => {
-                    messageCooldown.delete(key);
-                }, 60000);
-            } catch (error) {
-                logMessageToConsole(`Error sending message: ${error.message}`, true);
-            }
+        try {
+            channel.send(message);
+        } catch (error) {
+            logMessageToConsole(`Error sending message: ${error.message}`, true);
         }
     }
 };
 
 // Function to parse and post messages from the log file
 const parseAndPost = (line) => {
-    if (line.match(/Got character ZDOID from [^\s]+ : (?![+-]?0$)[+-]?\d+:[1-9]\d*/)) {
-        const playerNameMatch = line.match(/Got character ZDOID from ([^\s]+) : (?![+-]?0$)[+-]?\d+:[1-9]\d*/);
-        const playerName = playerNameMatch ? playerNameMatch[1] : 'Unknown Player';
-        logMessageToConsole(`Read from log: ${line} - Matched player login pattern`);
+    if (line.match(/Got character ZDOID from \w+ : (?!0:0$)[+-]?\d+:[1-9]\d*/)) { // Player login
+        const playerNameMatch = line.match(/Got character ZDOID from (\w+) : (?!0:0$)([+-]?\d+):[1-9]\d*/);
+        const playerName = playerNameMatch ? playerNameMatch[1] : 'Unknown Player Name';
+        const playerId = playerNameMatch ? playerNameMatch[2] : 'Unknown Player ID';
+        logMessageToConsole(`Matched player login pattern for player ${playerName} (${playerId})`);
         const playerLoginMessage = getPlayerLoginMessage(playerName);
+        playerJoinType = "join";
         client.guilds.cache.forEach((guild) => {
-            postMessageWithCooldown(playerLoginMessage, playerName, guild);
+            postMessage(playerLoginMessage, guild);
         });
-    } else if (line.includes('Random event set:')) {
+    } else if (line.match(/Got character ZDOID from \w+ : 0:0/)) { // Player died
+        const playerNameMatch = line.match(/Got character ZDOID from (\w+) : 0:0/);
+        const playerName = playerNameMatch ? playerNameMatch[1] : 'Unknown Player Name';
+        logMessageToConsole(`Matched player death pattern for player ${playerName}`);
+        const playerDeathMessage = getPlayerDeathMessage(playerName);
+        playerJoinType = "resurrect";
+        client.guilds.cache.forEach((guild) => {
+            postMessage(playerDeathMessage, guild);
+        });
+    } else if (line.includes('Random event set:')) { // Random event
         const eventMatch = line.match(/Random event set:(\w+)/);
         const event = eventMatch ? eventMatch[1] : 'unknown';
-        logMessageToConsole(`Read from log: ${line} - Matched random event pattern`);
+        logMessageToConsole(`Matched random event pattern: ${event}`);
         const eventMessage = getEventMessage(event);
         client.guilds.cache.forEach((guild) => {
-            postMessageWithCooldown(eventMessage, event, guild);
+            postMessage(eventMessage, guild);
         });
-    } 
+    } else {
+        logMessageToConsole("Line doesn't match any defined pattern");
+    }
 };
 
 // Set up a child process to tail the log file

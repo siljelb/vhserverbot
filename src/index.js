@@ -193,7 +193,7 @@ const getPlayerEpithet = (playerName) => {
     } else { // If not assigned, generate a new epithet and save it
         const vikingEpithet = replaceWithRandomEpithet(playerName);
         logMessageToConsole(`Player name \"${playerName}\" not found on file, assigning epithet \"${vikingEpithet}\"`);
-        playerData[playerName] = vikingEpithet;
+        playerData[playerName] = vikingEpithet; 
         saveFile(playerData,'playerData.json');
         return vikingEpithet;
     }
@@ -210,8 +210,8 @@ const getPlayerLoginMessage = (playerName) => {
     const playerNameWithEpithet = playerName + ' ' + vikingEpithet; // Concatenation with a space
 
     const message = (playerJoinType === "join")
-        ? `**${getRandomMessage(joinMessages, playerNameWithEpithet)}**`
-        : `**${getRandomMessage(resurrectMessages, playerNameWithEpithet)}**`;
+        ? `${getRandomMessage(joinMessages, playerNameWithEpithet)}`
+        : `${getRandomMessage(resurrectMessages, playerNameWithEpithet)}`;
 
     logMessageToConsole(message);
     return message;
@@ -219,7 +219,7 @@ const getPlayerLoginMessage = (playerName) => {
 
 const getPlayerDeathMessage = (playerName) => {
     const vikingEpithet = getPlayerEpithet(playerName);
-    const message = `**${getRandomMessage(deathMessages, playerName, vikingEpithet)}**`;
+    const message = `${getRandomMessage(deathMessages, playerName, vikingEpithet)}`;
 
     logMessageToConsole(message);
     return message;

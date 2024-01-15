@@ -146,7 +146,7 @@ const loadResurrectMessages = () => {
 
 // Function to load death messages from file
 const loadDeathMessages = () => {
-    const data = loadFile('deathMessages.json', 'resurrect messages');
+    const data = loadFile('deathMessages.json', 'death messages');
     if (data) {
         logMessageToConsole(`Death Messages loaded:\n${JSON.stringify(data, null, 2)}`);
         return data;
@@ -200,20 +200,18 @@ const getPlayerEpithet = (playerName) => {
 };
 
 // Function to return a random message based on a given array of messages, the player name and the player epithet
-const getRandomMessage = (messageArray, playerName, vikingEpithet) => {
+const getRandomMessage = (messageArray, playerNameWithEpithet) => {
     const randomMessage = messageArray[Math.floor(Math.random() * messageArray.length)];
-    return randomMessage.replace('{player}', playerName).replace('{vikingEpithet}', vikingEpithet);
+    return randomMessage.replace('{player}', playerNameWithEpithet);
 };
 
 const getPlayerLoginMessage = (playerName) => {
     const vikingEpithet = getPlayerEpithet(playerName);
-    let message = "";
+    const playerNameWithEpithet = playerName + ' ' + vikingEpithet; // Concatenation with a space
 
-    if (playerJoinType == "join") {
-        message = `**${getRandomMessage(joinMessages, playerName, vikingEpithet)} has entered Valheim. Come join them!**`;
-    } else if (playerJoinType == "resurrect") {
-        message = `**${getRandomMessage(resurrectMessages, playerName, vikingEpithet)}**`;
-    }
+    const message = (playerJoinType === "join")
+        ? `**${getRandomMessage(joinMessages, playerNameWithEpithet)}**`
+        : `**${getRandomMessage(resurrectMessages, playerNameWithEpithet)}**`;
 
     logMessageToConsole(message);
     return message;
@@ -221,7 +219,7 @@ const getPlayerLoginMessage = (playerName) => {
 
 const getPlayerDeathMessage = (playerName) => {
     const vikingEpithet = getPlayerEpithet(playerName);
-    const message = `:skull_crossbones: **${getRandomMessage(deathMessages, playerName, vikingEpithet)} has been slain. All hail the fallen warrior!**`;
+    const message = `**${getRandomMessage(deathMessages, playerName, vikingEpithet)}**`;
 
     logMessageToConsole(message);
     return message;

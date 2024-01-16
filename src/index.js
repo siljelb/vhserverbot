@@ -199,11 +199,29 @@ const getPlayerEpithet = (playerName) => {
     }
 };
 
-// Function to return a random message based on a given array of messages, the player name and the player epithet
+// Function to return a random message based on a given array of messages, and the player name including epithet
 const getRandomMessage = (messageArray, playerNameWithEpithet) => {
-    const randomMessage = messageArray[Math.floor(Math.random() * messageArray.length)];
+    if (!getRandomMessage.usedIndices) {
+        getRandomMessage.usedIndices = [];
+    }
+
+    // Check if all messages have been used, reset the used indices array
+    if (getRandomMessage.usedIndices.length === messageArray.length) {
+        getRandomMessage.usedIndices = [];
+    }
+
+    let randomIndex;
+    // Keep generating random indices until an unused one is found
+    do {
+        randomIndex = Math.floor(Math.random() * messageArray.length);
+    } while (getRandomMessage.usedIndices.includes(randomIndex));
+
+    getRandomMessage.usedIndices.push(randomIndex);
+
+    const randomMessage = messageArray[randomIndex];
     return randomMessage.replace('{player}', playerNameWithEpithet);
 };
+
 
 const getPlayerLoginMessage = (playerName) => {
     const vikingEpithet = getPlayerEpithet(playerName);

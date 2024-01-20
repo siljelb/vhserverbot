@@ -199,28 +199,35 @@ const getPlayerEpithet = (playerName) => {
     }
 };
 
-// Function to return a random message based on a given array of messages, and the player name including epithet
+// Function to return a random message based on a given array of messages and the player name including epithet
 const getRandomMessage = (messageArray, playerNameWithEpithet) => {
-    if (!getRandomMessage.usedIndices) {
-        getRandomMessage.usedIndices = [];
+    if (!getRandomMessage.usedIndicesMap) {
+        getRandomMessage.usedIndicesMap = {};
     }
 
-    // Check if all messages have been used, reset the used indices array
-    if (getRandomMessage.usedIndices.length === messageArray.length) {
-        getRandomMessage.usedIndices = [];
+    // Check if usedIndices array is not initialized for the current messageArray, initialize it
+    if (!getRandomMessage.usedIndicesMap[messageArray]) {
+        getRandomMessage.usedIndicesMap[messageArray] = [];
+    }
+
+    // Check if all messages for the current messageArray have been used, reset the used indices array
+    if (getRandomMessage.usedIndicesMap[messageArray].length === messageArray.length) {
+        getRandomMessage.usedIndicesMap[messageArray] = [];
     }
 
     let randomIndex;
     // Keep generating random indices until an unused one is found
     do {
         randomIndex = Math.floor(Math.random() * messageArray.length);
-    } while (getRandomMessage.usedIndices.includes(randomIndex));
+    } while (getRandomMessage.usedIndicesMap[messageArray].includes(randomIndex));
 
-    getRandomMessage.usedIndices.push(randomIndex);
+    // Track the used index for the current messageArray
+    getRandomMessage.usedIndicesMap[messageArray].push(randomIndex);
 
     const randomMessage = messageArray[randomIndex];
     return randomMessage.replace('{player}', playerNameWithEpithet);
 };
+
 
 
 const getPlayerLoginMessage = (playerName) => {
